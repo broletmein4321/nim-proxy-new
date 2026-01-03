@@ -5,8 +5,9 @@ const https = require('https');
 
 const app = express();
 
-// 🛑 FORCE PORT 3000 (No variables, no guessing)
-const PORT = 3000;
+// 🛑 THE FIX: Listen to Railway's injected Port variable
+// If Railway says jump, we say "How high?"
+const PORT = process.env.PORT || 3000;
 
 const agent = new https.Agent({ keepAlive: true, timeout: 600000 });
 const NIM_API_BASE = process.env.NIM_API_BASE || 'https://integrate.api.nvidia.com/v1';
@@ -26,14 +27,13 @@ app.options('*', cors());
 app.use(express.json({ limit: '500mb' }));
 app.use(express.urlencoded({ limit: '500mb', extended: true }));
 
-// HEALTH CHECK
-app.get('/', (req, res) => res.status(200).send('Proxy Running on Port 3000'));
+// ✅ UNIVERSAL HEALTH CHECK
+// This ensures that no matter what path Railway pings, we say "OK"
+app.get('/', (req, res) => res.status(200).send('Proxy Alive'));
 app.get('/health', (req, res) => res.status(200).json({ status: 'ok' }));
-app.get('/v1/models', (req, res) => res.json({ object: 'list', data: [] }));
 
 app.post('/v1/chat/completions', async (req, res) => {
   try {
-    console.log('📨 Request Received');
     let nimRequest = { ...req.body };
     const requestedModel = nimRequest.model;
     nimRequest.model = MODEL_MAPPING[requestedModel] || requestedModel;
@@ -66,7 +66,7 @@ app.post('/v1/chat/completions', async (req, res) => {
   }
 });
 
-// LISTEN ON 0.0.0.0:3000
+// ✅ LISTEN ON 0.0.0.0 (REQUIRED)
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`✅ Server FORCED to listen on 0.0.0.0:${PORT}`);
+  console.log(`✅ Server successfully started on port ${PORT}`);
 });
