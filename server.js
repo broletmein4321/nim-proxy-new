@@ -5,10 +5,9 @@ const https = require('https');
 
 const app = express();
 
-// TRUST RAILWAY
-const PORT = process.env.PORT || 3000;
+// 🛑 FORCE PORT 3000 (No variables, no guessing)
+const PORT = 3000;
 
-// Configuration
 const agent = new https.Agent({ keepAlive: true, timeout: 600000 });
 const NIM_API_BASE = process.env.NIM_API_BASE || 'https://integrate.api.nvidia.com/v1';
 const NIM_API_KEY = process.env.NIM_API_KEY;
@@ -27,21 +26,14 @@ app.options('*', cors());
 app.use(express.json({ limit: '500mb' }));
 app.use(express.urlencoded({ limit: '500mb', extended: true }));
 
-// 🔥 DEBUG LOGGER: Tells us exactly what Railway is pinging
-app.use((req, res, next) => {
-  console.log(`🔔 Incoming Request: ${req.method} ${req.path}`);
-  next();
-});
-
-// 🔥 UNIVERSAL HEALTH CHECK: Answers "Yes" to EVERYTHING
-app.get('/', (req, res) => res.status(200).send('Alive'));
-app.get('/health', (req, res) => res.status(200).send('OK'));
-app.head('/', (req, res) => res.status(200).end()); // Railway sometimes uses HEAD requests
-
+// HEALTH CHECK
+app.get('/', (req, res) => res.status(200).send('Proxy Running on Port 3000'));
+app.get('/health', (req, res) => res.status(200).json({ status: 'ok' }));
 app.get('/v1/models', (req, res) => res.json({ object: 'list', data: [] }));
 
 app.post('/v1/chat/completions', async (req, res) => {
   try {
+    console.log('📨 Request Received');
     let nimRequest = { ...req.body };
     const requestedModel = nimRequest.model;
     nimRequest.model = MODEL_MAPPING[requestedModel] || requestedModel;
@@ -69,12 +61,12 @@ app.post('/v1/chat/completions', async (req, res) => {
       res.json(response.data);
     }
   } catch (error) {
-    console.error("Proxy Error:", error.message);
+    console.error(error.message);
     res.status(500).json({ error: "Proxy Error" });
   }
 });
 
-// Start Server
+// LISTEN ON 0.0.0.0:3000
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server listening on port ${PORT}`);
+  console.log(`✅ Server FORCED to listen on 0.0.0.0:${PORT}`);
 });
