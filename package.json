@@ -1,7 +1,7 @@
 {
-  "name": "nim-proxy-v2",
-  "version": "2.0.0",
-  "description": "NVIDIA NIM Proxy with Heartbeat and Scrubber",
+  "name": "openai-nim-proxy",
+  "version": "1.0.0",
+  "description": "OpenAI compatible proxy for NVIDIA NIM API",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
