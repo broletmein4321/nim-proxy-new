@@ -4,7 +4,7 @@ const axios = require('axios');
 const https = require('https');
 
 const app = express();
-const PORT = process.env.PORT || 8080; // Railway defaults to 8080
+const PORT = process.env.PORT || 8080;
 
 // ==============================================================================
 // 1. CONFIGURATION
@@ -15,10 +15,10 @@ const NIM_API_BASE = process.env.NIM_API_BASE || 'https://integrate.api.nvidia.c
 const NIM_API_KEY = process.env.NIM_API_KEY;
 
 const MODEL_MAPPING = {
-  // New GLM
+  // New GLM Model
   'gpt-4o': 'z-ai/glm4.7',
   'glm-4': 'z-ai/glm4.7',
-  // Classics
+  // Old Models
   'gpt-4': 'deepseek-ai/deepseek-v3.2',
   'gpt-3.5-turbo': 'moonshotai/kimi-k2-thinking',
   'deepseek-v3.2': 'deepseek-ai/deepseek-v3.2',
@@ -35,14 +35,9 @@ app.use(express.json({ limit: '500mb' }));
 app.use(express.urlencoded({ limit: '500mb', extended: true }));
 
 // ==============================================================================
-// 3. RAILWAY HEALTH CHECK (The Fix)
+// 3. HEALTH CHECK (Prevents SIGTERM)
 // ==============================================================================
-
-// Railway looks for a response here. If it gets 404 or no response, it KILLS the app.
-app.get('/', (req, res) => {
-  res.status(200).send('Proxy is Alive! 🟢');
-});
-
+app.get('/', (req, res) => res.status(200).send('Proxy is Alive!'));
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 app.get('/v1/models', (req, res) => res.json({ object: 'list', data: [] }));
 
@@ -70,14 +65,13 @@ app.post('/v1/chat/completions', async (req, res) => {
       res.setHeader('Content-Type', 'text/event-stream');
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('Connection', 'keep-alive');
-      
       const heartbeat = setInterval(() => res.write(': keep-alive\n\n'), 10000);
       
       response.data.on('data', chunk => {
         const lines = chunk.toString().split('\n');
         for (const line of lines) {
            if (line.includes('[DONE]')) { clearInterval(heartbeat); res.write('data: [DONE]\n\n'); continue; }
-           // Pass-through logic here (simplified for reliability)
+           // Simple pass-through to ensure stability
            if (line.startsWith('data: ')) res.write(line + '\n');
         }
       });
@@ -92,7 +86,7 @@ app.post('/v1/chat/completions', async (req, res) => {
   }
 });
 
-// 🔥 THE NETWORK FIX: Bind to 0.0.0.0
+// 🔥 THE FIX: Bind to 0.0.0.0
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Proxy running on port ${PORT}`);
 });
