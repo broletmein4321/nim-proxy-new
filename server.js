@@ -13,7 +13,7 @@ const PORT = process.env.PORT || 3000;
 // High-Stability Agent
 const agent = new https.Agent({ 
   keepAlive: true, 
-  timeout: 600000 // 10 minutes
+  timeout: 600000 
 });
 
 const NIM_API_BASE = process.env.NIM_API_BASE || 'https://integrate.api.nvidia.com/v1';
@@ -21,11 +21,11 @@ const NIM_API_KEY = process.env.NIM_API_KEY;
 
 // MODEL MAPPING
 const MODEL_MAPPING = {
-  // --- NEW GLM MODEL ---
+  // New GLM Model
   'gpt-4o': 'z-ai/glm4.7',
   'glm-4': 'z-ai/glm4.7',
 
-  // --- EXISTING MODELS ---
+  // Existing Models
   'gpt-4': 'deepseek-ai/deepseek-v3.2',
   'gpt-3.5-turbo': 'moonshotai/kimi-k2-thinking',
   'deepseek-v3.2': 'deepseek-ai/deepseek-v3.2',
@@ -39,11 +39,11 @@ const MODEL_MAPPING = {
 app.use(cors({ origin: '*', methods: ['GET', 'POST', 'OPTIONS'] }));
 app.options('*', cors());
 
-// 500MB Limit
+// 500MB Payload Limit
 app.use(express.json({ limit: '500mb' }));
 app.use(express.urlencoded({ limit: '500mb', extended: true }));
 
-// Mega Logger
+// Logger
 app.use((req, res, next) => {
   if (req.method === 'POST') {
     const params = Object.keys(req.body).filter(k => k !== 'messages');
@@ -53,16 +53,27 @@ app.use((req, res, next) => {
 });
 
 // ==============================================================================
-// 3. MAIN ROUTE
+// 3. ROUTES
 // ==============================================================================
 
+// 🔥 RAILWAY HEALTH CHECK FIX
+// Railway pings this to see if the app is alive. If missing, it kills the app.
+app.get('/', (req, res) => {
+  res.status(200).send('Proxy is Running! 🚀');
+});
+
 app.get('/health', (req, res) => res.json({ status: 'ok', models: Object.keys(MODEL_MAPPING) }));
+
 app.get('/v1/models', (req, res) => {
   const models = Object.keys(MODEL_MAPPING).map(id => ({
     id: id, object: 'model', created: Date.now(), owned_by: 'nvidia-nim'
   }));
   res.json({ object: 'list', data: models });
 });
+
+// ==============================================================================
+// 4. MAIN PROXY
+// ==============================================================================
 
 app.post('/v1/chat/completions', async (req, res) => {
   try {
@@ -95,11 +106,7 @@ app.post('/v1/chat/completions', async (req, res) => {
       res.setHeader('Connection', 'keep-alive');
 
       let insideThinking = false;
-      
-      // Heartbeat
-      const heartbeat = setInterval(() => {
-          res.write(': keep-alive\n\n');
-      }, 10000);
+      const heartbeat = setInterval(() => res.write(': keep-alive\n\n'), 10000);
 
       response.data.on('data', (chunk) => {
         const lines = chunk.toString().split('\n');
@@ -148,4 +155,8 @@ app.post('/v1/chat/completions', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => console.log(`Proxy running on port ${PORT}`));
+// 🔥 NETWORK BINDING FIX
+// Binding to '0.0.0.0' allows Railway to see the app from outside the container.
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Proxy running on port ${PORT}`);
+});
