@@ -5,7 +5,7 @@ const https = require('https');
 
 const app = express();
 
-// 1. DEFAULT TO 8080 (Standard for New Railway Apps)
+// 1. DEFAULT TO 8080
 const PORT = process.env.PORT || 8080;
 
 const agent = new https.Agent({ keepAlive: true, timeout: 600000 });
@@ -26,7 +26,7 @@ app.options('*', cors());
 app.use(express.json({ limit: '500mb' }));
 app.use(express.urlencoded({ limit: '500mb', extended: true }));
 
-// 2. HEALTH CHECK (Prevents the SIGTERM crash)
+// 2. HEALTH CHECK
 app.get('/', (req, res) => res.status(200).send('Proxy Running!'));
 app.get('/health', (req, res) => res.status(200).json({ status: 'ok' }));
 
@@ -63,34 +63,7 @@ app.post('/v1/chat/completions', async (req, res) => {
   }
 });
 
-// 3. LISTEN ON 0.0.0.0 (Crucial for Railway)
+// 3. LISTEN ON 0.0.0.0
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Server listening on 0.0.0.0:${PORT}`);
 });
-```
-
----
-
-### Step 2: The Railway Reset (Do this carefully)
-Go to your **Railway Project** (on Firefox/Browser) and change these settings to match the code above.
-
-1.  **Variables Tab:**
-    *   **Delete** the `PORT` variable if you added it earlier.
-    *   Leave only `NIM_API_KEY`.
-
-2.  **Settings Tab -> Networking:**
-    *   **Service Port:** Set to **`8080`**.
-    *   *(Note: Even if it already says 8080, delete it and type it again to be sure).*
-
-3.  **Settings Tab -> Service (or Deploy):**
-    *   **Healthcheck Path:** **DELETE IT.** Make it completely blank/empty.
-    *   *(This stops Railway from killing the app if it takes 1 second too long to reply).*
-
-**Click Redeploy.**
-
-This forces your app to use the standard **Port 8080** configuration, which is what works on 99% of new Railway accounts.
-32.6s
-info
-Google AI models may make mistakes, so double-check outputs.
-Use Arrow Up and Arrow Down to select a turn, Enter to jump to it, and Escape to return to the chat.
-Start typing a prompt
