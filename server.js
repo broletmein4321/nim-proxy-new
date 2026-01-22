@@ -25,9 +25,9 @@ const NIM_API_KEY = process.env.NIM_API_KEY;
 // Maps generic names (from Chub) to specific NVIDIA IDs.
 const MODEL_MAPPING = {
   // Chub/Janitor Presets
-  'gpt-4': 'deepseek-ai/deepseek-v3.2',
-  'gpt-4o': 'deepseek-ai/deepseek-v3.2',
-  'gpt-4-turbo': 'deepseek-ai/deepseek-v3.2',
+  'gpt-4': 'z-ai/glm4.7',
+  'gpt-4o': 'z-ai/glm4.7',
+  'gpt-4-turbo': 'z-ai/glm4.7',
   'gpt-3.5-turbo': 'moonshotai/kimi-k2-thinking',
   
   // Direct Names
